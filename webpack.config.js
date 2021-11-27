@@ -2,7 +2,6 @@ const path = require('path');
 const {CleanWebpackPlugin} = require('clean-webpack-plugin');
 const TerserWebpackPlugin = require("terser-webpack-plugin");
 
-// const isDev = process.env.NODE_ENV === 'development';
 const isProd = process.env.NODE_ENV === 'production';
 
 const optimization = () => {
@@ -27,7 +26,7 @@ module.exports = {
     main: [ './index.js'],
   },
   output: {
-    filename: '[name].[contenthash].js',
+    filename: '[name].bundle.js',
     path: path.resolve(__dirname, 'dist')
   },
   target: 'node',
@@ -40,7 +39,7 @@ module.exports = {
   },
   optimization: optimization(),
   devServer: {
-    port: 4200,
+    port: 5000,
     open: true
   },
   plugins: [

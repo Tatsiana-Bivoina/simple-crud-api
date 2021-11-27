@@ -9,7 +9,6 @@ const port = process.env.PORT;
 let personArr = [];
 
 http.createServer(function(request,response) {
-  console.log(request.url, request.method);
   let requestUrlArr = request.url.split('/');
   requestUrlArr.shift();
     
@@ -18,7 +17,6 @@ http.createServer(function(request,response) {
       case 'GET': 
         if(requestUrlArr.length == 1) {
           sendResponse(response, 200, personArr);
-          break;
         }
         if(requestUrlArr.length == 2) {
           if(!validateUUID(request.url)) {
@@ -33,6 +31,7 @@ http.createServer(function(request,response) {
             }
           }
         }
+        break;
       case 'POST': 
         request.on('data', data => {
           const jsondata = JSON.parse(data);
@@ -48,15 +47,46 @@ http.createServer(function(request,response) {
         });
         break;
       case 'DELETE':
+        if(!validateUUID(request.url)) {
+          sendResponse(response, 400, {"Message": "The requested id is not a universally unique identifier"});
+        } else {
+          let obj = findPersonById(requestUrlArr[1], personArr);
+          if(obj.statusCode == 404) {
+            sendResponse(response, obj.statusCode, {"Message": `${obj.message}`});
+          }
+          if(obj.statusCode == 200) {
+            personArr.splice(obj.personIndex, 1);
+            response.setHeader('Content-Type', 'application/json');
+            response.statusCode = 204;
+            response.end();
+          }
+        }
         break;
       case 'PUT':
+        if(!validateUUID(request.url)) {
+          sendResponse(response, 400, {"Message": "The requested id is not a universally unique identifier"});
+        } else {
+          let obj = findPersonById(requestUrlArr[1], personArr);
+          if(obj.statusCode == 404) {
+            sendResponse(response, obj.statusCode, {"Message": `${obj.message}`});
+          }
+          if(obj.statusCode == 200) {
+            request.on('data', data => {
+              const jsondata = JSON.parse(data);
+              let person = obj.person;
+              let newObj = Object.assign({"id": person.id}, jsondata)
+              personArr.splice(obj.personIndex, 1, newObj);
+              sendResponse(response, obj.statusCode, newObj);
+            });
+          }
+        }
         break;
     }
   } else {
-    sendResponse(response, 500, {"Message": "Resource that you requested doesn`t exist"});
+    sendResponse(response, 404, {"Message": "Resource that you requested doesn`t exist"});
   } 
 }).listen(port, "localhost",()=>{
-    console.log("Сервер начал прослушивание запросов");
+    console.log(`Сервер начал прослушивание запросов: порт ${port}`);
 });
 
 function sendResponse(response, statusCode, data) {
