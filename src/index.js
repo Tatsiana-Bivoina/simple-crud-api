@@ -8,47 +8,59 @@ const { findPersonById } = require('./findPerson');
 const port = process.env.PORT;
 let personArr = [];
 
-
-http.createServer(function(request,response){
-    console.log(request.url, request.method);
-
-    if(request.url == '/person') {
-      switch(request.method) {
-        case 'GET': 
-          response.setHeader('Content-Type', 'application/json');
-          response.statusCode = 200;
-          response.end(JSON.stringify(personArr, null, '\t'));
-          break;
-        case 'POST': 
-          request.on('data', data => {
-            const jsondata = JSON.parse(data);
-            if(validatePost(jsondata, response)) {
-              let newObj = Object.assign({"id": generateUUID()}, jsondata)
-              personArr.push(newObj);
-              response.setHeader('Content-Type', 'application/json');
-              response.statusCode = 201;
-              response.end(JSON.stringify(newObj, null, '\t'));
-            }
-          });
-          break;
-      }
-    } else if (validateUUID(request.url, response)) {
-      let id = request.url.split('/');
-      let person = findPersonById(id[id.length - 1], personArr, response);
-
-      switch(request.method) {
-        case 'GET': 
-          response.setHeader('Content-Type', 'application/json');
-          response.statusCode = 200;
-          response.end(JSON.stringify(person, null, '\t'));
-          break;
-      }
-    } else {
-      response.statusCode = 500;
-      response.end('"Message": "Resource that you requested doesn`t exist"');
-    }
+http.createServer(function(request,response) {
+  console.log(request.url, request.method);
+  let requestUrlArr = request.url.split('/');
+  requestUrlArr.shift();
     
-     
+  if(requestUrlArr[0] == 'person' || (requestUrlArr[0] == 'person' && requestUrlArr.length == 2)) {
+    switch(request.method) {
+      case 'GET': 
+        if(requestUrlArr.length == 1) {
+          sendResponse(response, 200, personArr);
+          break;
+        }
+        if(requestUrlArr.length == 2) {
+          if(!validateUUID(request.url)) {
+            sendResponse(response, 400, {"Message": "The requested id is not a universally unique identifier"});
+          } else {
+            let obj = findPersonById(requestUrlArr[1], personArr);
+            if(obj.statusCode == 404) {
+              sendResponse(response, obj.statusCode, {"Message": `${obj.message}`});
+            }
+            if(obj.statusCode == 200) {
+              sendResponse(response, obj.statusCode, obj.person);
+            }
+          }
+        }
+      case 'POST': 
+        request.on('data', data => {
+          const jsondata = JSON.parse(data);
+          let obj = validatePost(jsondata);
+          if(obj.statusCode == 201) {
+            let newObj = Object.assign({"id": generateUUID()}, jsondata)
+            personArr.push(newObj);
+            sendResponse(response, obj.statusCode, newObj);
+          }
+          if(obj.statusCode == 400) {
+            sendResponse(response, obj.statusCode, obj.message);
+          }
+        });
+        break;
+      case 'DELETE':
+        break;
+      case 'PUT':
+        break;
+    }
+  } else {
+    sendResponse(response, 500, {"Message": "Resource that you requested doesn`t exist"});
+  } 
 }).listen(port, "localhost",()=>{
     console.log("Сервер начал прослушивание запросов");
 });
+
+function sendResponse(response, statusCode, data) {
+  response.setHeader('Content-Type', 'application/json');
+  response.statusCode = statusCode;
+  response.end(JSON.stringify(data, null, '\t'));
+}

@@ -1,17 +1,18 @@
-function validatePost(jsondata, response) {
+function validatePost(jsondata) {
+  let obj = {
+    "statusCode": 201,
+    "message": ''
+  }
   if(!jsondata.hasOwnProperty('name') || typeof jsondata.name != 'string' || jsondata.name == '') {
-    sendResponse(response, 'Property name is missing in the request or the type is incorrect');
-    return false;
+    return sendResponse(obj, 'Property name is missing in the request or the type is incorrect');
   }
   if(!jsondata.hasOwnProperty('age') || typeof jsondata.age != 'number') {
-    sendResponse(response, 'Property age is missing in the request or the type is incorrect');
-    return false;
+    return sendResponse(obj, 'Property age is missing in the request or the type is incorrect');
   }
   if(!jsondata.hasOwnProperty('hobbies') || !Array.isArray(jsondata.hobbies) || !checkTypeArray(jsondata.hobbies)) {
-    sendResponse(response, 'Property hobbies is missing in the request or the type is incorrect');
-    return false;
+    return sendResponse(obj, 'Property hobbies is missing in the request or the type is incorrect');
   }
-  return true;
+  return obj;
 }
 
 function checkTypeArray(arr) {
@@ -22,16 +23,17 @@ function checkTypeArray(arr) {
   return isString;
 }
 
-function sendResponse(response, message) {
-  response.statusCode = 400;
-  response.end(`"Message": "${message}"`);
+
+function sendResponse(obj, message) {
+  obj.statusCode = 400;
+  obj.message = message;
+  return obj;
 }
 
-function validateUUID(requestUrl, response) {
+function validateUUID(requestUrl) {
   const regExp = /^\/person\/[0-9a-z]{8}-{1}[0-9a-z]{4}-{1}[0-9a-z]{4}-{1}[0-9a-z]{4}-{1}[0-9a-z]{12}$/g;
   let isUUID = true;
   if(!regExp.test(requestUrl)) {
-    sendResponse(response, 'The requested id is not a universally unique identifier');
     return isUUID = false;
   }
   return isUUID;

@@ -1,16 +1,19 @@
-function findPersonById(id, personArr, response) {
-  let person = {};
-  personArr.forEach(element => {
+function findPersonById(id, personsArr) {
+  let obj = {
+    "statusCode": 200,
+    "message": '',
+    "person": {}
+  }
+  personsArr.forEach(element => {
     if(element.id == id) {
-      person = element;
+      obj.person = element;
     }
   });
-  if(Object.keys(person).length == 0) {
-    response.statusCode = 404;
-    response.end('"Message": "Person with requested id does not exist"');
-    return;
+  if(Object.keys(obj.person).length == 0) {
+    obj.statusCode = 404;
+    obj.message = 'Person with requested id does not exist';
   }
-  return person;
+  return obj;
 }
 
 module.exports = {
